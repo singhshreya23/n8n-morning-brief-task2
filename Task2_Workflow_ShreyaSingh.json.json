@@ -1,0 +1,567 @@
+{
+  "name": "Task2 - Morning Brief (Hacker News → Discord)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "b75fc138-e33c-4136-90eb-a6942e061665",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1616,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "d3bb768b-84e7-4598-82c9-27fdcc9555e5",
+      "name": "Get Front Page Stories",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1392,
+        16
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "hits",
+        "options": {}
+      },
+      "id": "0973a3f3-a43b-43a6-8dc3-c2855a9a114b",
+      "name": "Split Into Stories",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "points",
+              "order": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "96366534-55e6-4525-85e2-aa8dc75900a4",
+      "name": "Sort by Points",
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "id": "3e3fbbb0-5e77-435a-9faf-49f5434c59f9",
+      "name": "Keep Top 5",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "db74f56c-d91c-49ac-8c02-05839830fca4",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "a0b9bd3f-c3ed-4887-b275-a1179ea707e3",
+              "name": "url",
+              "value": "={{ $json.url || 'https://news.ycombinator.com/item?id=' + $json.objectID }}",
+              "type": "string"
+            },
+            {
+              "id": "42a46c50-61a7-48be-9ec5-87c700e97d25",
+              "name": "points",
+              "value": "={{ $json.points }}",
+              "type": "number"
+            },
+            {
+              "id": "21ce9a35-2a50-4d32-91ce-9ce9b82c4ffd",
+              "name": "comments",
+              "value": "={{ $json.num_comments ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "93250565-b861-4f9d-8531-eb504d6d661f",
+              "name": "author",
+              "value": "={{ $json.author }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "04a309ad-1567-474c-a6db-614f5f89e2f9",
+      "name": "Keep Useful Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -512,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://hacker-news.firebaseio.com/v0/user/' + $json.author + '.json' }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "15140235-87fc-4fa5-8650-64acb15ce6e6",
+      "name": "Get Author Karma",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -304,
+        -96
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "46dc4b66-2667-4cee-84f3-05e061604d86",
+              "name": "title",
+              "value": "={{ $('Keep Useful Fields').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "33997a4c-dab6-4022-963c-ad81137b9d5e",
+              "name": "url",
+              "value": "={{ $('Keep Useful Fields').item.json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "e1fb762e-c1a0-401a-9149-cb1265f184de",
+              "name": "points",
+              "value": "={{ $('Keep Useful Fields').item.json.points }}",
+              "type": "number"
+            },
+            {
+              "id": "6de10d80-653f-4cf1-8a51-94bf4b4172de",
+              "name": "comments",
+              "value": "={{ $('Keep Useful Fields').item.json.comments }}",
+              "type": "number"
+            },
+            {
+              "id": "937abe17-cb51-4753-9d17-b76368b43123",
+              "name": "author",
+              "value": "={{ $('Keep Useful Fields').item.json.author }}",
+              "type": "string"
+            },
+            {
+              "id": "d38f7144-0486-4f56-97ef-40718a286aaf",
+              "name": "karma",
+              "value": "={{ $json.karma ?? 'unknown' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dfb683b0-78f5-44ab-9dd0-b6f31ca48071",
+      "name": "Add Karma to Story",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "830f9a8c-ad7c-4d7b-8a8e-13e01f70c71e",
+              "leftValue": "={{ $json.points }}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "4d96f289-0c14-4404-b204-5f6812dd1887",
+      "name": "Points > 100?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3dc0ae3f-dfa4-4701-827a-16de53346229",
+              "name": "line",
+              "value": "={{ '🔥 **' + $json.title + '**\\n' + $json.points + ' points · ' + $json.comments + ' comments · by ' + $json.author + ' (karma ' + $json.karma + ')\\n<' + $json.url + '>' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ac4d9120-f577-4682-b069-a6d0923bd6e8",
+      "name": "Format Message Line",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        368,
+        -192
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1aca604f-aaf0-42c6-8c01-f46ff36fb5aa",
+      "name": "Skip Low-Score Stories",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        368,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "line"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d67586d8-42c6-4aa1-80b2-ac56521d1cff",
+      "name": "Combine Into One List",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        592,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ '☀️ **Morning Brief: Top Hacker News stories**\\n' + $now.toFormat('dd LLL yyyy, HH:mm') + '\\n\\n' + $json.line.join('\\n\\n') }}",
+        "options": {}
+      },
+      "id": "18c7d14f-bcfc-4aa3-98f8-42a2ddde91da",
+      "name": "Send Morning Brief (Discord)",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -192
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "webhookId": "b4359671-332b-4b2e-abab-aaf57316676d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "ZApAIwEZjq2f0luO",
+          "name": "Discord Webhook - Morning Brief"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ '🚨 **Morning Brief failed**\\nError: ' + ($json.error?.message || $json.error || 'Unknown error') + '\\nTime: ' + $now.toFormat('dd LLL yyyy, HH:mm') }}",
+        "options": {}
+      },
+      "id": "3c1375cd-5b82-4c5c-a311-28f921f7b349",
+      "name": "Send Error Alert (Discord)",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        240
+      ],
+      "webhookId": "dbc512d6-40aa-41a7-81ce-7eea1e52c811",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "ZApAIwEZjq2f0luO",
+          "name": "Discord Webhook - Morning Brief"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Morning Brief failed. See the error alert in Discord and the node that turned red."
+      },
+      "id": "0848153d-087d-449f-a428-0e4819b8770a",
+      "name": "Mark Run as Failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ☀️ Normal path\n1 API call gets stories → keep top 5 → 2nd API call gets each author's karma → IF points > 100 → one Discord message",
+        "height": 140,
+        "width": 460,
+        "color": 4
+      },
+      "id": "fac18307-ca46-4eb8-9e0e-3fc9be70af1b",
+      "name": "Note: Normal Path",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🚨 Error path\nIf fetching stories or sending to Discord fails, the red output sends an alert to Discord and marks the run as failed. Never silent.",
+        "height": 140,
+        "width": 460,
+        "color": 3
+      },
+      "id": "eeee2cdc-a95c-47bb-bec7-a140608c6399",
+      "name": "Note: Error Path",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        416
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Get Front Page Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Front Page Stories": {
+      "main": [
+        [
+          {
+            "node": "Split Into Stories",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Alert (Discord)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Stories": {
+      "main": [
+        [
+          {
+            "node": "Sort by Points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort by Points": {
+      "main": [
+        [
+          {
+            "node": "Keep Top 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Top 5": {
+      "main": [
+        [
+          {
+            "node": "Keep Useful Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Useful Fields": {
+      "main": [
+        [
+          {
+            "node": "Get Author Karma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Author Karma": {
+      "main": [
+        [
+          {
+            "node": "Add Karma to Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Karma to Story": {
+      "main": [
+        [
+          {
+            "node": "Points > 100?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Points > 100?": {
+      "main": [
+        [
+          {
+            "node": "Format Message Line",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Low-Score Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message Line": {
+      "main": [
+        [
+          {
+            "node": "Combine Into One List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Into One List": {
+      "main": [
+        [
+          {
+            "node": "Send Morning Brief (Discord)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Morning Brief (Discord)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Error Alert (Discord)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Error Alert (Discord)": {
+      "main": [
+        [
+          {
+            "node": "Mark Run as Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2a74642b-b864-4da6-978f-6e736d0cc45b",
+  "meta": {
+    "instanceId": "df7d519e8bc403400ca8dc73aa39a14afd8a1564663108e0b4b06f2d3dc847b6"
+  },
+  "nodeGroups": [],
+  "id": "z2kqUAdo3Wrcc9w7",
+  "tags": []
+}
